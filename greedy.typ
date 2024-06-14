@@ -16,6 +16,41 @@
 #let colred(x) = text(fill: red, $#x$)
 #let colgray(x) = text(fill: gray, $#x$)
 
+// Problem Callout Block
+#let problem(title, content) = figure(
+    showybox(
+        frame: (
+            border-color: red.darken(50%),
+            title-color: red.lighten(60%),
+            body-color: red.lighten(80%)
+        ),
+        title-style: (
+            color: black,
+            weight: "regular",
+            align: center
+        ),
+        title: title,
+        content
+    ),
+    supplement: [Problem],
+    kind: "Problem",
+)
+
+// Theorem / Lemma Callout Block
+#let theorem(content) = figure(
+    showybox(
+        frame: (
+            border-color: purple.darken(40%),
+            body-color: purple.lighten(95%)
+        ),
+        content
+    ),
+    supplement: [Theorem],
+    kind: "Theorem",
+)
+
+
+// Definition Callout Block
 #let definition(content) = figure(
     showybox(
         frame: (
@@ -28,6 +63,7 @@
     kind: "Definition",
 )
 
+// Examples Callout Block
 #let example(content) = figure(
     showybox(
         frame: (
@@ -193,7 +229,7 @@ A valid execution of the model starts at the initial marking $M_0$, fires a sequ
         $w = (a, 1)(b, 2)(d, 3)(e, 4)(f, 5)$
     ]
     The initial marking only has $a$ enabled and firing $a$ moves the token to places that enable $b,c,d$ and $e$. Then transition $b$ at time $2$ is fired, which puts a token in one of the places consumed by transition $f$. at time $3$, $d$ is fired followed by $e$ at $4$ and now $f$ is enabled and is fired after a second of wait.
-]) <diag1>
+]) <ex1>
 
 
 Now we can define the langauge of the Time Petri Net as follows
@@ -265,27 +301,14 @@ We have that the precision of the model is high if it does not exhibit behavior 
 = Conformance Checking and Model Repair in Timed Setting
 The Problem of Model Repair is, given an event log, a process model and some budget, compute the edits that can be made to the model under the budget to improve the conformance of the model to the system by some metric. If we let a Time Petri Net be our process model and fitness me our conformance metric then the problem can be stated as :
 
-#showybox(
-    frame: (
-        border-color: red.darken(50%),
-        title-color: red.lighten(60%),
-        body-color: red.lighten(80%)
-    ),
-    title-style: (
-        color: black,
-        weight: "regular",
-        align: center
-    ),
-    title: "Model Repair of Time Petri Net (General)",
-    [Given a process $cal(N)$ denoted by a Time Petri Net, a log $L$ and a budget $beta$, we wish to find an edit of the $cal(N) -> cal(N')$ that can be implemented under the given budget constraint and optimally increases the fitness.]
-)
+#problem("Model Repair of Time Petri Net (General)")[Given a process $cal(N)$ denoted by a Time Petri Net, a log $L$ and a budget $beta$, we wish to find an edit of the $cal(N) -> cal(N')$ that can be implemented under the given budget constraint and optimally increases the fitness.] <prob1>
 
 The two ways in which the model can be imperfect fitness is to have traces in the log such that
 - $"Untime"(L) subset.not.eq "Untime"(cal(L)(cal(N)))$, i.e there are traces where the sequence of events is not captured by $cal(N)$
 - There exists a trace whose untimed version is in the langauge, but the timestamps do not match with any word in the language of $cal(N)$
 
 #example[
-    *Example 2:* Consider the Process Model in *Example 1* and consider the the following observed traces
+    *Example 2:* Consider the Process Model in @ex1 and consider the the following observed traces.
     - $sigma_1 = (a, 0)(a, 1)(b, 2)(d, 3),(e, 3)(f, 5)$
         - Clearly, there is no trace in the process model that has more than 1 $a$, which means the structure of the model itself needs to be updated by adding/removing states and transitions.
     - $sigma_2 = (a, 1)(b, 1)(d, 3)(e, 4)(f, 5)$
@@ -298,20 +321,7 @@ In the untimed setting, this problems is veiwed as minimzing cost over a series 
 
 Also, in practice, a large set of malfuctionings can be modeled as temporal anomalies (a slowing down of a conveyor belt speed due to wear, a shorter duration of a work phase due to to an incorrect handling of the operator, a causal change in a timer duration, etc.) and the problem is a pre-requisite for the general case of dealing with all kinds of errors. In this paper we will be focusing on the purely timed version of the model repair problem. i.e where the only anomalies that are fixed are temporal ones (All traces that are not in the language of the model will have an issue similar to $sigma_2$ in @ex2)
 
-#showybox(
-    frame: (
-        border-color: red.darken(50%),
-        title-color: red.lighten(60%),
-        body-color: red.lighten(80%)
-    ),
-    title-style: (
-        color: black,
-        weight: "regular",
-        align: center
-    ),
-    title: "Model Repair of Time Petri Net (Purely Timed)",
-    [Given a process $cal(N)$ denoted by a Time Petri Net, a log $L$ and a budget $beta$, we wish to find an edit of the $cal(N) -> cal(N')$ that can be implemented under the given budget constraint and optimally increases the fitness. We also have the constraint that $forall sigma in L, "Untime"(sigma)$ gives a valid causal process for $cal(N)$.]
-)
+#problem("Model Repair of Time Petri Nets (Purely Timed)")[Given a process $cal(N)$ denoted by a Time Petri Net, a log $L$ and a budget $beta$, we wish to find an edit of the $cal(N) -> cal(N')$ that can be implemented under the given budget constraint and optimally increases the fitness. We also have the constraint that $forall sigma in L, "Untime"(sigma)$ gives a valid causal process for $cal(N)$.] <prob2>
 
 To properly formalize the problem we need definitions for editing out petri net and conformance for which we need to define out distance functions.
 
@@ -384,15 +394,15 @@ showybox(
 ) <def14-16>
 
 = Results
-== Sequential Petri Nets and Delay-Only Distance
-We first focus out attention to a restricted version of problem where @def14-16[Definition 15].
+== Sequential Petri Nets and Delay-Only Distance <restrictions>
+We first focus out attention to a restricted version of problem where:
 
 - The model in question will be a *Sequential Time Petri Net*, which means that, there is a dedicated start state and a dedicated end state, and each transition, connects one state, to one other state in a way that the underlying graph looks like a line graph, which the start and end states acting as the two ends of the graph.
 - The problem is restricited to a *Purely Timed Problem*, which means that the sequence of transitions represent the sequence of events in the system correctly, but the timestamps might not be accurate.
-- The metric for measure which will be used is going to be *Delay-Only Distance*,
+- The metric for measure which will be used is going to be *Delay-Only Distance* #link(<def14-16>)[(Definition 15)]
 - For the edits to the mode, we cost $x$ unit of the budget whenever any bound of a time range of a transition is changed by $x$.
 - The conformance metric used is _fitness_ but here we define it as $- (max_(sigma in L) "dist"_theta (sigma, cal(L(N)))$ which can be easily converted to the normalized distance used in the original definition.
-- Another thing to note is that for a Sequential Petri Net is in bijection with it's Causal Process, hence we will not make a distinction here.
+- Another thing to note is that a Sequential Petri Net is isomorphic to it's Causal Net, hence we will not make a distinction between the two here.
 
 #example[
     *Example 3:* We start with a simple example and informally go over the procedure
@@ -422,7 +432,9 @@ We first focus out attention to a restricted version of problem where @def14-16[
         node((4, -0.4), text(size: 7pt, "iii")),
         node((6, -0.4), text(size: 7pt, "iv")),
     ))
-]
+] <ex3>
+// Can't figure out how to get a page break so 2 blocks :p
+
 #example[
 
     We are also given the following log
@@ -513,6 +525,132 @@ We first focus out attention to a restricted version of problem where @def14-16[
 ]
 
 #pagebreak()
+
+=== Reduction to simpler cases
+
+Note that the only 2 kinds of edits one would want to make to the petri net are:
+- increasing the upper bound of a transition
+- decreasing a lower bound of a transition
+This is because these are precisely the edits that would increase the size of the language of the petri net, and other edits make the language of the petri-net strictly smaller.
+
+We now try to reduce the petri-net in a way that we would only have to deal with 1 type of edit.
+
+We restrict the input set of petri nets to those which in which the static interval function is the constant function $x |-> [0,0]$.
+
+Given a Sequential Time Petri-net $cal(N)$ and a trace $tau$ on it we can reduce it to a Sequential Time Petri-net $cal(N')$ with the above definition in the following:
+- If the original set of transitions was $T$ then let $T' = {t_"start" | t in T} union {t_"end" | t in T}$
+- Given places $p_i$ and $p_(i+1)$ and a transition $t_i$ such that $""^circle.filled.small t_i = {p_i}$ and $t_i^circle.filled.small = {p_(i+1)}$ we make states $q_i, q'_i, q_(i+1)$ such that
+    - $""^circle.filled.small text(t_i)_"start" = {q_i}$
+    - $text(t_i)_"start"^circle.filled.small = {q'_i}$
+    - $""^circle.filled.small text(t_i)_"end" = {q'_i}$
+    - $text(t_i)_"end"^circle.filled.small = {q_(i+1)}$
+
+This procedure takes in each transition and copies it, one copy for the start boundry of the transition, and one for the end.
+
+Given a flow function $f$ for $cal(N)$, we can define $f'$ for $cal(N')$ as follows:
+- If $f = f_1 f_2 ... f_n$ we let $f' = text(f'_1)_"start" text(f'_1)_"end" space text(f'_2)_"start" ... text(f'_n)_"end"$,  note that $|f'| = 2 |f|$.
+- If $t_i = angle.l "st"_i, "en"_i angle.r$ then
+    - If $f_i < "st"_i$ we let $text(f'_i)_"start" = "st"_i - f_i$ and $text(f'_i)_"end" = 0$
+    - If $f_i > "en"_i$ we let $text(f'_i)_"start" = 0$ and $text(f'_i)_"end" = f_i - "en"_i$
+    - otherwise we let $text(f'_i)_"start" = text(f'_i)_"end" = 0$
+
+
+#example([
+    *Example 4:* Consider the Petri Net $N$ and the flow functions $F$ on them.\
+    Using the above construction we get the following $N'$
+
+    #figure(
+    diagram(
+        spacing: (25pt, 20pt),
+        // Places
+        node((0,0), $circle.filled.small$, stroke: 0.5pt, radius: 2mm, name: <q1>),
+        node((1,0), stroke: 0.5pt, radius: 2mm, name: <p1>),
+        node((2,0), stroke: 0.5pt, radius: 2mm, name: <q2>),
+        node((3,0), stroke: 0.5pt, radius: 2mm, name: <p2>),
+        node((4,0), stroke: 0.5pt, radius: 2mm, name: <q3>),
+        node((5,0), stroke: 0.5pt, radius: 2mm, name: <p3>),
+        node((6,0), stroke: 0.5pt, radius: 2mm, name: <q4>),
+        node((0, -0.4), text(size: 7pt, $q_1$)),
+        node((2, -0.4), text(size: 7pt, $q_2$)),
+        node((4, -0.4), text(size: 7pt, $q_3$)),
+        node((6, -0.4), text(size: 7pt, $q_4$)),
+        node((1, -0.4), text(size: 7pt, $q'_1$)),
+        node((3, -0.4), text(size: 7pt, $q'_2$)),
+        node((5, -0.4), text(size: 7pt, $q'_3$)),
+
+        // Transitions
+        node((0.5, 0), stroke: 0.5pt, shape: rect, width: 0.5mm, height: 5mm, name: <t1>),
+        node((1.5, 0), stroke: 0.5pt, shape: rect, width: 0.5mm, height: 5mm, name: <t2>),
+        node((2.5, 0), stroke: 0.5pt, shape: rect, width: 0.5mm, height: 5mm, name: <t3>),
+        node((3.5, 0), stroke: 0.5pt, shape: rect, width: 0.5mm, height: 5mm, name: <t4>),
+        node((4.5, 0), stroke: 0.5pt, shape: rect, width: 0.5mm, height: 5mm, name: <t5>),
+        node((5.5, 0), stroke: 0.5pt, shape: rect, width: 0.5mm, height: 5mm, name: <t6>),
+        node((0.5, 0.4), text(size: 5pt, $[0, 0]$)),
+        node((1.5, 0.4), text(size: 5pt, $[0, 0]$)),
+        node((2.5, 0.4), text(size: 5pt, $[0, 0]$)),
+        node((3.5, 0.4), text(size: 5pt, $[0, 0]$)),
+        node((4.5, 0.4), text(size: 5pt, $[0, 0]$)),
+        node((5.5, 0.4), text(size: 5pt, $[0, 0]$)),
+
+        // Arcs
+        edge(<q1>, <t1>, "|->"),
+        edge(<t1>, <p1>, "|->"),
+        edge(<p1>, <t2>, "|->"),
+        edge(<t2>, <q2>, "|->"),
+        edge(<q2>, <t3>, "|->"),
+        edge(<t3>, <p2>, "|->"),
+        edge(<p2>, <t4>, "|->"),
+        edge(<t4>, <q3>, "|->"),
+        edge(<q3>, <t5>, "|->"),
+        edge(<t5>, <p3>, "|->"),
+        edge(<p3>, <t6>, "|->"),
+        edge(<t6>, <q4>, "|->"),
+    ))
+
+    And we can rewrite the set of flow functions as
+    #math.equation(block:true, numbering:none)[$
+        F =  mat(delim:"{",
+        "[" 0, 0, 0, 1, 0, 2"]," ;
+        "[" 1, 0, 0, 2, 0, 0"]" ;
+        )
+    $]
+
+    Note: I am omitting the labelling of the transitions as they are not relevant here.
+])
+
+This conversion intuitively changes the petri net so that one can treat different boundaries of transitions as different transitions, taking a transition too early or too late will translate to taking the first transition too late or taking the second transition too late, which matches our goal of having just 1 kind of edit.
+
+#theorem([
+    *Theorem 1:* Given a Petri Net $cal(N)$ and a log $cal(L)$ and it's corresponding net and log in the restricted case $cal(N')$ and $cal(L')$, for each edit of cost $c$ that takes creates $cal(M)$ from $cal(N)$, there is an edit of cost $c$ that creates $cal(M')$ from $cal(N')$ such that
+    - $cal(M')$ is the restricited version of $cal(M)$ which can also be constructed using the methods defined above
+    - For any net $N$ and log $L$, it's restricted version $N'$ with $L'$ has the same fitness as $N$
+]) <theorem1>
+
+=== Reduction to simpler problem
+
+
+If there are $n$ transitions in a petri-net $cal(N)$ which becomes $cal(N')$ after an edit. We can represent the change $cal(N) -> cal(N')$ as a $2n$ dimensional vector defined as follows
+$
+    v(i) = cases(
+        cal(N)(k)_"start" - cal(N')(k)_"start" quad quad quad &i = 2k-1,
+        cal(N')(k)_"end"  - cal(N)(k)_"end"                   &i = 2k,
+    )
+$
+
+where $cal(N)(k)_"start"$ is the lower bound of the $k^"th"$ transition of $cal(N)$.
+
+If we restrict out domain of changes to the ones that were defined above, we get that $v$ is a non-negative vector in $RR^(2n)$, which represents the increase in each upper bound and decrease in each lowerbound.
+
+Also note that given any vector $v$ representing an edit, it's cost would just be the sum of all components of $v$.\
+Given a Time Petri Net $cal(N)$ and log $L$, we can define an $"unfit" : RR^(2n) -> RR$ function which will be the negation of the fitness function defined in @restrictions.
+
+#definition([
+    *Definition 17:* _Unfit function_\
+    We start building this function for a general Time Petri Net as a combination of such functions from simpler scenarios.
+
+
+]) <def17>
+
 === Plan
 - Our fitness depends on the distances of the log traces from the model, so we start with computing those. During that we find the traces with maximal distance, which are the ones that affect fitness.
 - Find how changing each transition will affect the found subset, we have a limited budget, so we must find the edits to the transition that improves the fitness the most, we use linear programming to find it.
@@ -528,7 +666,7 @@ During the execution of the model repair algorith, we keep updating the model, w
 We define the distance between a trace and a model as the minimum distance between the trace and any word of the model.
 
 #definition([
-    *Definition 17:* The _flow function_ (or simply _flow_) of a trace is $f : (Sigma, RR^+)^*$ which keeps track of the delay between successive events and is defined for $tau =tau_1 tau_2 ... tau_n$ as $f = f_1 f_2 ... f_n$ where
+    *Definition 18:* The _flow function_ (or simply _flow_) of a trace is $f : (Sigma, RR^+)^*$ which keeps track of the delay between successive events and is defined for $tau =tau_1 tau_2 ... tau_n$ as $f = f_1 f_2 ... f_n$ where
     #math.equation(block:true, numbering: none)[
     $
         f_i := cases(
@@ -537,7 +675,7 @@ We define the distance between a trace and a model as the minimum distance betwe
         )
     $
     ]
-]) <def17>
+]) <def18>
 
 Let the sequence of transitions in $cal(N)$ be $T = {t_1, t_2, t_3 ... t_n}$ where each $"SI"(t_i) = angle.l s_i, e_i angle.r$.
 Given a trace $tau = tau_1 tau_2 ... tau_n$ we can say it's distance from $cal(N)$ can be given by the following.
