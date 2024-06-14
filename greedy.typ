@@ -624,34 +624,47 @@ This conversion intuitively changes the petri net so that one can treat differen
     *Theorem 1:* Given a Petri Net $cal(N)$ and a log $cal(L)$ and it's corresponding net and log in the restricted case $cal(N')$ and $cal(L')$, for each edit of cost $c$ that takes creates $cal(M)$ from $cal(N)$, there is an edit of cost $c$ that creates $cal(M')$ from $cal(N')$ such that
     - $cal(M')$ is the restricited version of $cal(M)$ which can also be constructed using the methods defined above
     - For any net $N$ and log $L$, it's restricted version $N'$ with $L'$ has the same fitness as $N$
+    Hence solving model repair for this restricited class, solves it for general sequential petri nets too.
 ]) <theorem1>
 
-=== Reduction to simpler problem
+Note: This can be made more efficient by only considering transitions for boundaries that matter. i.e, for an upper bound if a transition is taken too late in a trace, or for a lower bound if a transition is taken too early in a trace. This is especially easy to notice in petri-nets produced by editing the above restricited nets, apart from the first reduction, all other reductions either decrease the number of states or keep it the same.
 
+This reduction will be assumed for all subsequent subsections of @restrictions
 
-If there are $n$ transitions in a petri-net $cal(N)$ which becomes $cal(N')$ after an edit. We can represent the change $cal(N) -> cal(N')$ as a $2n$ dimensional vector defined as follows
-$
-    v(i) = cases(
-        cal(N)(k)_"start" - cal(N')(k)_"start" quad quad quad &i = 2k-1,
-        cal(N')(k)_"end"  - cal(N)(k)_"end"                   &i = 2k,
-    )
-$
+=== The $"unfit"$ function
 
-where $cal(N)(k)_"start"$ is the lower bound of the $k^"th"$ transition of $cal(N)$.
+Given an a petri net $cal(N)$ with $n$ transitions, any edit, must increase the upper bound of a transition by some amount, so we can represent an edit by an $n$ dimesional vector, precisely the amount by which each upperbound of a transition is increased, formally, for any edit that takes a petri net $cal(N)$ to a petri net $cal(N')$, one can represent it as the vector $v$ such that $v(i) = cal(N')(i)_"end" - cal(N)(i)_"end"$. Where $cal(N)(i)_"end"$ is the upper bound of the static interval of the $i^"th"$ transition of net $cal(N)$.
 
-If we restrict out domain of changes to the ones that were defined above, we get that $v$ is a non-negative vector in $RR^(2n)$, which represents the increase in each upper bound and decrease in each lowerbound.
+Now the space $(RR^+)^n$ can be mapped to the space of the petri nets that can be creating by editing a given starting petri net $cal(N)$.
 
-Also note that given any vector $v$ representing an edit, it's cost would just be the sum of all components of $v$.\
-Given a Time Petri Net $cal(N)$ and log $L$, we can define an $"unfit" : RR^(2n) -> RR$ function which will be the negation of the fitness function defined in @restrictions.
+This lets us define the $"unfit" : (RR^+)^n -> RR$ function. The input of the function is a vector, which represents an edit to the original petri net $cal(N)$ and the output of the function is the negation of the fitness of the net obtained after the edit.
+
+The following helper function $d' : RR times RR -> RR$ will be useful: $d'(a, b) = max(0, b-a)$
+
+First we define the $"unfit"$ function for the case where there is just 1 trace in the log. Let the trace be $tau$ and it's flow function be $f$. Here the $"unfit"$ function is the same as the distance function.
+
+For each transition $t_i$ of the petri net, we define $d_(cal(N), i) (arrow(a), arrow(b)) = d'(arrow(a)(i), arrow(b)(i))$. Where $arrow(a)(i)$ is the $i^"th"$ component of $arrow(a)$.
+
+Now that we have defined it for each component we let $D_cal(N) (arrow(a), arrow(b))= sum_(i = 1)^n d_i( arrow(a), arrow(b))$
+
+#theorem([
+    *Theorem 2:* Given an input vector $a$ and a flow function $f$, the function $D(a, f)$ is precisely $"dist"_theta$ between $cal(N')$ and $f$ where $cal(N')$ is the net obtained after performing the edit $a$ on starting $cal(N)$.
+]) <theorem2>
 
 #definition([
-    *Definition 17:* _Unfit function_\
-    We start building this function for a general Time Petri Net as a combination of such functions from simpler scenarios.
+    *Definition 17:* Given a net $cal(N)$ with constant $[0,0]$ static interval functions for all transitions and a log $cal(L)$, the $"unfit"$ _function_ can be defined as follows.
 
+    $
+        "unfit"_cal(N)(a, cal(L)) = max_(l in cal(L)) D(a, l)
+    $
 
 ]) <def17>
 
-=== Plan
+#theorem([
+    *Corollary 3:* $"unfit"_cal(N)(a, cal(L))$ is negation of the fitness of $cal(N)$ with respect to $cal(L)$.
+]) <theorem3>
+
+=== Gradient Descent
 - Our fitness depends on the distances of the log traces from the model, so we start with computing those. During that we find the traces with maximal distance, which are the ones that affect fitness.
 - Find how changing each transition will affect the found subset, we have a limited budget, so we must find the edits to the transition that improves the fitness the most, we use linear programming to find it.
 - Once the optimal change if found, we keep changing the transitions until one of the 3 things happen
