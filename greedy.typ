@@ -629,9 +629,9 @@ This conversion intuitively changes the petri net so that one can treat differen
 
 Note: This can be made more efficient by only considering transitions for boundaries that matter. i.e, for an upper bound if a transition is taken too late in a trace, or for a lower bound if a transition is taken too early in a trace. This is especially easy to notice in petri-nets produced by editing the above restricited nets, apart from the first reduction, all other reductions either decrease the number of states or keep it the same.
 
-This reduction will be assumed for all subsequent subsections of @restrictions
+This reduction will be assumed for @unfit, @gradient and @solving.
 
-=== The $"unfit"$ function
+=== The $"unfit"$ function <unfit>
 
 Given an a petri net $cal(N)$ with $n$ transitions, any edit, must increase the upper bound of a transition by some amount, so we can represent an edit by an $n$ dimesional vector, precisely the amount by which each upperbound of a transition is increased, formally, for any edit that takes a petri net $cal(N)$ to a petri net $cal(N')$, one can represent it as the vector $v$ such that $v(i) = cal(N')(i)_"end" - cal(N)(i)_"end"$. Where $cal(N)(i)_"end"$ is the upper bound of the static interval of the $i^"th"$ transition of net $cal(N)$.
 
@@ -643,34 +643,201 @@ The following helper function $d' : RR times RR -> RR$ will be useful: $d'(a, b)
 
 First we define the $"unfit"$ function for the case where there is just 1 trace in the log. Let the trace be $tau$ and it's flow function be $f$. Here the $"unfit"$ function is the same as the distance function.
 
-For each transition $t_i$ of the petri net, we define $d_(cal(N), i) (arrow(a), arrow(b)) = d'(arrow(a)(i), arrow(b)(i))$. Where $arrow(a)(i)$ is the $i^"th"$ component of $arrow(a)$.
+For each transition $t_i$ of the petri net, we define $d_i (arrow(a), arrow(b)) = d'(arrow(a)(i), arrow(b)(i))$. Where $arrow(a)(i)$ is the $i^"th"$ component of $arrow(a)$.
 
-Now that we have defined it for each component we let $D_cal(N) (arrow(a), arrow(b))= sum_(i = 1)^n d_i( arrow(a), arrow(b))$
+Now that we have defined it for each component we let $D (arrow(a), arrow(b))= sum_(i = 1)^n d_i( arrow(a), arrow(b))$
 
 #theorem([
-    *Theorem 2:* Given an input vector $a$ and a flow function $f$, the function $D(a, f)$ is precisely $"dist"_theta$ between $cal(N')$ and $f$ where $cal(N')$ is the net obtained after performing the edit $a$ on starting $cal(N)$.
+    *Theorem 2:* Given a vector $arrow(a)$ representing an edit on the petri net $cal(N)$ producing $cal(N')$ and a flow function $f$ in $cal(F')$, $D(a, f)$ is precisely  $"dist"_theta$ between the edited net and $f$.
 ]) <theorem2>
 
 #definition([
     *Definition 17:* Given a net $cal(N)$ with constant $[0,0]$ static interval functions for all transitions and a log $cal(L)$, the $"unfit"$ _function_ can be defined as follows.
 
     $
-        "unfit"_cal(N)(a, cal(L)) = max_(l in cal(L)) D(a, l)
+        "unfit"_cal((N, L))(a) = max_(f in cal(F')) D(a, f)
     $
 
 ]) <def17>
 
 #theorem([
-    *Corollary 3:* $"unfit"_cal(N)(a, cal(L))$ is negation of the fitness of $cal(N)$ with respect to $cal(L)$.
+    *Corollary 3:* $"unfit"_cal((N, L))(a)$ is negation of the fitness of $cal(N)$ with respect to $cal(L)$.
 ]) <theorem3>
 
-=== Gradient Descent
-- Our fitness depends on the distances of the log traces from the model, so we start with computing those. During that we find the traces with maximal distance, which are the ones that affect fitness.
-- Find how changing each transition will affect the found subset, we have a limited budget, so we must find the edits to the transition that improves the fitness the most, we use linear programming to find it.
-- Once the optimal change if found, we keep changing the transitions until one of the 3 things happen
-    - We run out of budget
-    - Our model becomes perfectly fit (log lies entirely in the language of the model)
-    - we unequally reduce the distance of the log entries, so at some point, one of the traces not considers, becomes significant, at which point we go back to step 1
+#example([
+    *Example 5:* Consider the following net $cal(N)$ with 2 transitions
+
+    #figure(
+    diagram(
+        spacing: (25pt, 20pt),
+        // Places
+        node((0,0), $circle.filled.small$, stroke: 0.5pt, radius: 2mm, name: <q1>),
+        node((1,0), stroke: 0.5pt, radius: 2mm, name: <q2>),
+        node((2,0), stroke: 0.5pt, radius: 2mm, name: <q3>),
+        node((0, -0.4), text(size: 7pt, $q_1$)),
+        node((1, -0.4), text(size: 7pt, $q_2$)),
+        node((2, -0.4), text(size: 7pt, $q_3$)),
+
+        // Transitions
+        node((0.5, 0), stroke: 0.5pt, shape: rect, width: 0.5mm, height: 5mm, name: <t1>),
+        node((1.5, 0), stroke: 0.5pt, shape: rect, width: 0.5mm, height: 5mm, name: <t2>),
+        node((0.5, 0.4), text(size: 5pt, $[0, 0]$)),
+        node((1.5, 0.4), text(size: 5pt, $[0, 0]$)),
+
+        // Arcs
+        edge(<q1>, <t1>, "|->"),
+        edge(<t1>, <q2>, "|->"),
+        edge(<q2>, <t2>, "|->"),
+        edge(<t2>, <q3>, "|->"),
+    ))
+
+    And the following set of flow functions for it
+    #math.equation(block:true, numbering:none)[$
+        F =  mat(delim:"{",
+        f_1, =, "[" 2, 0"]," ;
+        f_2, =, "[" 0, 2"]," ;
+        f_3, =, "[" 1.5, 1.5"]," ;
+        )
+    $]
+
+    And the following are the graphs of the $"unfit"$ functions
+
+    #grid(
+        columns: (auto, auto, auto),
+        figure(
+            image("Images/unfit_ex_f1.png", width: 80%),
+            caption: [
+                $"unfit"$ function for $f_1$
+            ],
+            kind: "Image",
+            supplement: [Image]
+
+        ),
+        figure(
+            image("Images/unfit_ex_f2.png", width: 80%),
+            caption: [
+                $"unfit"$ function for $f_2$
+            ],
+            kind: "Image",
+            supplement: [Image]
+
+        ),
+        figure(
+            image("Images/unfit_ex_f3.png", width: 80%),
+            caption: [
+                $"unfit"$ function for $f_3$
+            ],
+            kind: "Image",
+            supplement: [Image]
+
+        ),
+    )
+
+    #figure(
+        image("Images/unfit_ex_final.png", width: 30%),
+        caption: [
+            $"unfit"$ function for the entire problem
+        ],
+        kind: "Image",
+        supplement: [Image]
+
+    )
+
+]) <ex5>
+
+=== Gradient Descent <gradient>
+
+#theorem([
+    *Theorem 4:* Some properties of the $"unfit"$ functions:
+
+    The $"unfit"$ functions turns out to have a ton of nice properties.
+    - The function $d_i$ is continuous and a piecewise function, linear in each part.
+    - It is also a convex function.
+    - Since $"unfit"$ us just multiple $d_i$ functions combined using $max$ and summation. which means it's also continuous, piecewise linear, and a convex function.
+    - Also the domain of the function in general is $(R^+)^n$, but it can be restricted to all vectors such that the sum of their components ($p_1$ norm) $<= beta$ to give the problem a budget. In their scenarios the input space is a convex set.
+])
+
+These properties make it really good for gradient descent. Hence we will choose that as our strategy to solve the problem, it also precisely matches an intuitive direct startegy of finding the way to distribute the budgets to make changes optimal locally.
+
+Gradient Descent is a greedy mathematical optimization techniques that involves starting at a point in the input space and moving in the opposite direction of the gradient(in the direction where the function decreases at the highest rate), until a local minimum is reached.
+
+For our case picking Gradient Descent is a good option because:
+- The function is piecewise linear, which means each part the gradient is constant and can be computed easily using linear programming.
+- The function is convex with a convex set as it's input space, which means that there is only 1 set of global minima which is also convex and no other critical point.
+- The input space can be bounded. If the fitness of the model is $-k$ then the we can bound the input space to all vectors whose $p_1$ norm is less than $k*|L|$. This is also a closed set, hence compact, which means the points that evaluate the global minima are in the set.
+
+Therefore we can give the following algorithm for computing the model repair problem
+- We start at the point $bold(0)$
+- At every step we find the direction of steepest descent and we keep moving in that direction:
+    - Consume the entire budget
+    - A new trace becomes a trace with maximum distance from the net
+    - Some trace with maximum distance from net has a transition which is taken at a time delay accepted by the edited petri net.
+- Whenever we reach such a point, we do recompute the gradient and keep repeating this and the previous step.
+- We stop when the bugdet runs out or when the model becomes fit.
+
+=== Computing the Solution <solving>
+
+We have defined our unfit function as the maximum of the distances of the log traces from the model. Let $cal(F)_"max"$ be the set of flow functions with maximum distance from $cal(N)$.
+
+We now use linear programming to both compute the direction of steepest descent and the amount of budget to be spent in it before a recomputation is required.
+
+We will be using the following list of variables.
+- For every $t$ in the set of transitions of the petri net (denoted by $T$), we have a variable $b_t$ holding the budget assigned to $t$.
+- For every $f$ in $cal(F)$ we have $"imp"_f$ denoting the reduction in distance of $f$ from $cal(N)$ because of the edit.
+- $"improvement"$, holding the total change in the fitness of the model, hence our goal will be to maximize this.
+- $"spend"$, holding the total amount of budget spent.
+
+The following constants will be helpful in writing the equations
+- We let $arrow(a) = bold(0)$
+- $beta$, which is the total budget available
+- $"un-fitness" = "unfit"_cal((N, L))(arrow(a))$
+- For each $f in cal(F)$ we have $d_f = D(arrow(a), f)$, that is the distance of $f$ from $cal(N)$
+- for each $f in cal(F)$, we let $d_(f, i) = f_i$
+- For each $f in cal(F)$ and $t$ in $T$ we have $"affects"_(t, f)$ which is
+    - $0$ if $t$ is the $i^"th"$ transitions and $d_i (arrow(a), f)=0$
+    - $1$ otherwise
+
+The goal of linear program is
+$
+    "Maximize"("improvement")
+$
+
+Under the constraints:
+- We do not spend more than the total budget:
+    $
+        "spend" <= beta
+    $
+- Improvement in a flow function is the total budget assigned to the transitions which affect it, for each $f in cal(F)$ we have
+    $
+        "imp"_f = sum_(t in T) b_t times "affects"_(t, f)
+    $
+- Total improvement is the least improvement of all of the flow functions in $cal(F)_"max"$, so for each $f in cal(F)_"max"$
+    $
+        "improvement" <= "imp"_f
+    $
+- Computing the total amount of budget spent
+    $
+        "spend" = sum_(t in T) b_t
+    $
+
+The variables $b_t$ can be used to compute the direction of steepest descent, but we also add the following constrainst to calculate the largest "step size" after which we need to do recomputation.
+
+- We need to recompute when a new flow function needs to be added to $cal(F)_max$ so for all $f in cal(F)$
+    $
+        "un-fitness" - "improvement" >= d_f - "imp"_f
+    $
+- We need to recompute each time the $"effects"$ variables become outdated, so for all $i in [1 ... n]$ let $t_i$ be the $i^"th"$ transition and forall $f in cal(F)$ we have
+    $
+        b_(t_i) <= d_(f, i)
+    $
+
+Once we get values of $b_(t_i)$ after solving the linear program, we get $arrow(a)(i) = b_(t_i)$ where $t_i$ is the $i^"th"$ transition. We also set $beta := beta - "spend"$. After fixing those 2, we recompute all the other constants and do the linear programming again till we consume the entire budget or $"un-fitness"$ becomes $0$.
+
+=== Editing the Petri Nets
+
+Now with all the budgets for $cal(N)$ computed, we can edit the petri net to get $cal(N')$ which has the higest possible fitness that can be achieved under the budget constraint $beta$.
+
+= Archive
 
 === Finding the Distance between the Model and the Log Traces
 
