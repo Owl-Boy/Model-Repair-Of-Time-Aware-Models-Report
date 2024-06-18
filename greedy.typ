@@ -833,139 +833,143 @@ The variables $b_t$ can be used to compute the direction of steepest descent, bu
 
 Once we get values of $b_(t_i)$ after solving the linear program, we get $arrow(a)(i) = b_(t_i)$ where $t_i$ is the $i^"th"$ transition. We also set $beta := beta - "spend"$. After fixing those 2, we recompute all the other constants and do the linear programming again till we consume the entire budget or $"un-fitness"$ becomes $0$.
 
-=== Editing the Petri Nets
+=== Time Complexity
+
+The algorithm one local change using linear programming and repeating again and again till the budget is consumed or the model becomes fit.
+
+For the linear programming, given a petri net with $n$ transition, and a log with size $l$ we have to compute $2 l n + l + 3$ constants, which is $O(l n)$ time. Then we solve a linear programming problem with $n + l + 2$ variables and $3 l n + 2 l + 2$ constraints which can be computed in polynomial time (@LP-Complexity).
 
 Now with all the budgets for $cal(N)$ computed, we can edit the petri net to get $cal(N')$ which has the higest possible fitness that can be achieved under the budget constraint $beta$.
 
-= Archive
+// = Archive
 
-=== Finding the Distance between the Model and the Log Traces
+// === Finding the Distance between the Model and the Log Traces
 
-During the execution of the model repair algorith, we keep updating the model, which means that the set of furthest log traces might change, hence we need to keep track of all the traces.
+// During the execution of the model repair algorith, we keep updating the model, which means that the set of furthest log traces might change, hence we need to keep track of all the traces.
 
-We define the distance between a trace and a model as the minimum distance between the trace and any word of the model.
+// We define the distance between a trace and a model as the minimum distance between the trace and any word of the model.  For that we would have to compute 1 + 1 + 1 +
 
-#definition([
-    *Definition 18:* The _flow function_ (or simply _flow_) of a trace is $f : (Sigma, RR^+)^*$ which keeps track of the delay between successive events and is defined for $tau =tau_1 tau_2 ... tau_n$ as $f = f_1 f_2 ... f_n$ where
-    #math.equation(block:true, numbering: none)[
-    $
-        f_i := cases(
-            tau_1 &i=1,
-            tau_i - tau_(i-1) quad quad quad&i in [2 ... n]
-        )
-    $
-    ]
-]) <def18>
+// #definition([
+//     *Definition 18:* The _flow function_ (or simply _flow_) of a trace is $f : (Sigma, RR^+)^*$ which keeps track of the delay between successive events and is defined for $tau =tau_1 tau_2 ... tau_n$ as $f = f_1 f_2 ... f_n$ where
+//     #math.equation(block:true, numbering: none)[
+//     $
+//         f_i := cases(
+//             tau_1 &i=1,
+//             tau_i - tau_(i-1) quad quad quad&i in [2 ... n]
+//         )
+//     $
+//     ]
+// ]) <def18>
 
-Let the sequence of transitions in $cal(N)$ be $T = {t_1, t_2, t_3 ... t_n}$ where each $"SI"(t_i) = angle.l s_i, e_i angle.r$.
-Given a trace $tau = tau_1 tau_2 ... tau_n$ we can say it's distance from $cal(N)$ can be given by the following.
+// Let the sequence of transitions in $cal(N)$ be $T = {t_1, t_2, t_3 ... t_n}$ where each $"SI"(t_i) = angle.l s_i, e_i angle.r$.
+// Given a trace $tau = tau_1 tau_2 ... tau_n$ we can say it's distance from $cal(N)$ can be given by the following.
 
-Given a trace, we first find its flow and then we can use that to easily compute it's distance from the model in the following way.
+// Given a trace, we first find its flow and then we can use that to easily compute it's distance from the model in the following way.
 
-#algo(
-  title: [                    // note that title and parameters
-      #set text(size: 10pt)   // can be content
-      *Algorithm 1:* Dist
-  ],
-    parameters: ([$cal(N)$ : net],[$f$ : flow]),
-  comment-prefix: [#sym.triangle.stroked.r ],
-  comment-styles: (fill: rgb(50%, 50%, 50%)),
-  indent-size: 15pt,
-  indent-guides: 1pt + gray,
-  row-gutter: 5pt,
-  column-gutter: 5pt,
-  inset: 5pt,
-  stroke: 2pt + black,
-  fill: none,
-)[
-    $"n" := f."length"()$\
-    $"dist" := 0$\
-    for $i$ in $1 ... "n"$: #i\
-      if $f_i < s_i$ #i #comment[Transition taken too early]\
-        $"dist" := "dist" + (s_i - f_i)$ #d\
-      else if $f_i > e_i$ #i #comment[Transition taken too late]\
-        $"dist" := "dist" + (f_i - e_i)$ #d\
-      else #i #comment[Transition taken on time]\
-        $"dist" := "dist" + 0$ #d #d\
-    return $"dist"$
-] <alg1>
+// #algo(
+//   title: [                    // note that title and parameters
+//       #set text(size: 10pt)   // can be content
+//       *Algorithm 1:* Dist
+//   ],
+//     parameters: ([$cal(N)$ : net],[$f$ : flow]),
+//   comment-prefix: [#sym.triangle.stroked.r ],
+//   comment-styles: (fill: rgb(50%, 50%, 50%)),
+//   indent-size: 15pt,
+//   indent-guides: 1pt + gray,
+//   row-gutter: 5pt,
+//   column-gutter: 5pt,
+//   inset: 5pt,
+//   stroke: 2pt + black,
+//   fill: none,
+// )[
+//     $"n" := f."length"()$\
+//     $"dist" := 0$\
+//     for $i$ in $1 ... "n"$: #i\
+//       if $f_i < s_i$ #i #comment[Transition taken too early]\
+//         $"dist" := "dist" + (s_i - f_i)$ #d\
+//       else if $f_i > e_i$ #i #comment[Transition taken too late]\
+//         $"dist" := "dist" + (f_i - e_i)$ #d\
+//       else #i #comment[Transition taken on time]\
+//         $"dist" := "dist" + 0$ #d #d\
+//     return $"dist"$
+// ] <alg1>
 
-This can be done for each trace in $L$.\
-Now that we have a the set of logs we find the subset of the that are furthest away from the model which can simply be given by
-$
-    L_("max") = { sigma in L | forall sigma' in L, "Dist"(sigma, cal(N)) >= "Dist"(sigma', cal(N)) }
-$
+// This can be done for each trace in $L$.\
+// Now that we have a the set of logs we find the subset of the that are furthest away from the model which can simply be given by
+// $
+//     L_("max") = { sigma in L | forall sigma' in L, "Dist"(sigma, cal(N)) >= "Dist"(sigma', cal(N)) }
+// $
 
 
 
-=== Finding the Optimal Changes to Transitions
+// === Finding the Optimal Changes to Transitions
 
-We want to mimize out budget for a giving change in the fitness of the model, there are a few thigns that we need to keep in mind for that.
-- The fitness is only affected by log traces that are furthest away from the model.
-- If we want to make a change to transition, which affects some of furthest traces, but not all, it will not change the fitness, as the unaffected trace is still equally far away. So we would like to divide the budget to deal with multiple log traces at once.
+// We want to mimize out budget for a giving change in the fitness of the model, there are a few thigns that we need to keep in mind for that.
+// - The fitness is only affected by log traces that are furthest away from the model.
+// - If we want to make a change to transition, which affects some of furthest traces, but not all, it will not change the fitness, as the unaffected trace is still equally far away. So we would like to divide the budget to deal with multiple log traces at once.
 
-Note that we can say that improvement in fitness is $min$ of improvments in each trace. And improvement in a trace $tau$ is just the sum of budgets assigned to the transitions that affect the distance of $tau$.
+// Note that we can say that improvement in fitness is $min$ of improvments in each trace. And improvement in a trace $tau$ is just the sum of budgets assigned to the transitions that affect the distance of $tau$.
 
-- For dealing with all boundaries at once, we define $B = {s_i | angle.l s_i, e_i angle.r in T} union {e_i | angle.l s_i, e_i angle.r in T}$
-- The above statement about boundaries affecting traces can be formalized as
-$
-    "is_affected_by"(tau, b) = cases(
-        top quad quad quad &b = e_i "and" e_i < tau_i,
-        top quad quad quad &b = s_i "and" s_i > tau_i,
-        bot &"otherwise"
-    )
-$
+// - For dealing with all boundaries at once, we define $B = {s_i | angle.l s_i, e_i angle.r in T} union {e_i | angle.l s_i, e_i angle.r in T}$
+// - The above statement about boundaries affecting traces can be formalized as
+// $
+//     "is_affected_by"(tau, b) = cases(
+//         top quad quad quad &b = e_i "and" e_i < tau_i,
+//         top quad quad quad &b = s_i "and" s_i > tau_i,
+//         bot &"otherwise"
+//     )
+// $
 
-We can rephrase our problem of finding an optimal distribution as a linear program, we define use the following definitions for it:
+// We can rephrase our problem of finding an optimal distribution as a linear program, we define use the following definitions for it:
 
-- for each trace $tau_i in L'$ we have a variable $"tr"_i$ which represents how close the trace gets after making the edit.
-- for each $b in B$ we have the variable $"ch"_b$ which represent the portion of the budget assigned to that bound. Then we get the following equation for each $tr_i$.
+// - for each trace $tau_i in L'$ we have a variable $"tr"_i$ which represents how close the trace gets after making the edit.
+// - for each $b in B$ we have the variable $"ch"_b$ which represent the portion of the budget assigned to that bound. Then we get the following equation for each $tr_i$.
 
-$
-    tr_i = sum_(b in B\ "is_affected_by"(tau_i, b) = top) "ch"_b
-$
+// $
+//     tr_i = sum_(b in B\ "is_affected_by"(tau_i, b) = top) "ch"_b
+// $
 
-And we can measure the overall improved by the varible $"improvement"$ which can be given the constraint for each $tau_i in L'$
-$
-    "improvement" <= tr_i
-$
+// And we can measure the overall improved by the varible $"improvement"$ which can be given the constraint for each $tau_i in L'$
+// $
+//     "improvement" <= tr_i
+// $
 
-Now for are linear program we just need condition
-$
-    max("improvement")
-$
+// Now for are linear program we just need condition
+// $
+//     max("improvement")
+// $
 
-There are 3 extra constraints that we need to put that the algorithm does not ask us to spend an infinite amount of budget, these constraints correspond to the conditions when we need to stop spending the budget.
+// There are 3 extra constraints that we need to put that the algorithm does not ask us to spend an infinite amount of budget, these constraints correspond to the conditions when we need to stop spending the budget.
 
-- We cannot spend more than the budget
-$
-    sum_(b in B) "ch"_b <= beta
-$
-- We not to re-evaluate the updates each time an edit to a transition makes makes a trace be valid at some point.
-    - To do that, forall all $tau in L$, we define it's distance $d_(tau, b)$ from a bound $b$ as
-        - $0$ if it not affected by it.
-        - Distance between $f_j$ and $t_j$ where $f$ is the flow function of $tau$ and $t_j = angle.l dash, b angle.r "or" angle.l b, dash, angle.r$
-    - And $forall tau in L$ and $forall b in B$, if $"is_affected_by"(tau, b)$ we add the constraint
-$
-    d_(tau, b) >= "ch"_b
-$
-- We need to consider new transitions when they join the set of furthest transitions
-    - For every $tau_i in L$ (note: previously we were only dealing with $L'$) we define
-$
-    "tr"_i = sum_(b in B\ "is_affected_by"(tau_i, b)=top) "ch"_b \
-    "and" \
-    D - "improvement" >= "Dist"(tau_i, cal(N)) - "tr"_i
-$
-where $D$ is the maximum distance of a log trace from $cal(N)$.
+// - We cannot spend more than the budget
+// $
+//     sum_(b in B) "ch"_b <= beta
+// $
+// - We not to re-evaluate the updates each time an edit to a transition makes makes a trace be valid at some point.
+//     - To do that, forall all $tau in L$, we define it's distance $d_(tau, b)$ from a bound $b$ as
+//         - $0$ if it not affected by it.
+//         - Distance between $f_j$ and $t_j$ where $f$ is the flow function of $tau$ and $t_j = angle.l dash, b angle.r "or" angle.l b, dash, angle.r$
+//     - And $forall tau in L$ and $forall b in B$, if $"is_affected_by"(tau, b)$ we add the constraint
+// $
+//     d_(tau, b) >= "ch"_b
+// $
+// - We need to consider new transitions when they join the set of furthest transitions
+//     - For every $tau_i in L$ (note: previously we were only dealing with $L'$) we define
+// $
+//     "tr"_i = sum_(b in B\ "is_affected_by"(tau_i, b)=top) "ch"_b \
+//     "and" \
+//     D - "improvement" >= "Dist"(tau_i, cal(N)) - "tr"_i
+// $
+// where $D$ is the maximum distance of a log trace from $cal(N)$.
 
-Finding a solution to the above linear program gives an edit for the petri net, and the change in the fitness which is $"improvement"$.
+// Finding a solution to the above linear program gives an edit for the petri net, and the change in the fitness which is $"improvement"$.
 
-=== Editing the Petri Net
+// === Editing the Petri Net
 
-Now we go over all $"ch"_b$
-- If $b = e_i$, then we set $e_i <- e_i + "ch"_b$
-- If $b = s_i$, then we set $s_i <- s_i - "ch"_b$
-- We also set $D <- D - "improvement"$
-- We update the budget $beta <- beta - sum_(b in B) "ch"_b$
+// Now we go over all $"ch"_b$
+// - If $b = e_i$, then we set $e_i <- e_i + "ch"_b$
+// - If $b = s_i$, then we set $s_i <- s_i - "ch"_b$
+// - We also set $D <- D - "improvement"$
+// - We update the budget $beta <- beta - sum_(b in B) "ch"_b$
 
-And we keep repeating this process until our budget goes down to zero.
+// And we keep repeating this process until our budget goes down to zero.

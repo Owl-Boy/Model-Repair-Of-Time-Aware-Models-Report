@@ -4,6 +4,7 @@
    (LaTeX-add-bibitems
     "Timed-Alignments"
     "Process-Mining"
-    "Model-Repair"))
+    "Model-Repair"
+    "LP-Complexity"))
  '(or :bibtex :latex))
 
