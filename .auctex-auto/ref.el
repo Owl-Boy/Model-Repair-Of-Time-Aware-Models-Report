@@ -5,6 +5,7 @@
     "Timed-Alignments"
     "Process-Mining"
     "Model-Repair"
-    "LP-Complexity"))
+    "LP-Complexity"
+    "Alignments"))
  '(or :bibtex :latex))
 
